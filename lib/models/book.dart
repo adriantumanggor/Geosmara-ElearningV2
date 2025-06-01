@@ -6,7 +6,6 @@ class Book {
   final String author;
   final String imageUrl;
   final double rating;
-  final double price;
   final double progress;
   final List<Chapter> chapters;
 
@@ -16,7 +15,6 @@ class Book {
     required this.author,
     required this.imageUrl,
     required this.rating,
-    required this.price,
     this.progress = 0.0,
     this.chapters = const [],
   });

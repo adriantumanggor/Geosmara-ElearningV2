@@ -130,7 +130,7 @@ class ProgressScreen extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => BookDetailScreen(
-                                book: book, // Pass the entire book object
+                                bookId: book.id, // Pass the entire book object
                               ),
                             ),
                           );

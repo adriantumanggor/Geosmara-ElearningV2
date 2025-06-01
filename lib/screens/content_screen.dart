@@ -1,27 +1,37 @@
+// content_screen.dart
 import 'package:flutter/material.dart';
 import '../models/subchapter.dart';
+import '../services/api_service.dart';
+import '../widgets/content_app_bar.dart';
+import '../widgets/content_progress_indicator.dart';
+import '../widgets/content_page_view.dart';
+import '../widgets/content_navigation_controls.dart';
 
 class ContentScreen extends StatefulWidget {
-  final SubChapter subChapter;
+  final String subChapterId;
+  final String subChapterTitle;
 
   const ContentScreen({
     Key? key,
-    required this.subChapter,
+    required this.subChapterId,
+    required this.subChapterTitle,
   }) : super(key: key);
 
   @override
-  _ContentScreenState createState() => _ContentScreenState();
+  State<ContentScreen> createState() => _ContentScreenState();
 }
 
 class _ContentScreenState extends State<ContentScreen> {
-  late PageController _pageController;
-  late int currentPageIndex;
+  late final PageController _pageController;
+  int _currentPageIndex = 0;
+  SubChapter? _subChapter;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    currentPageIndex = 0; // Mulai dari halaman pertama
-    _pageController = PageController(initialPage: currentPageIndex);
+    _pageController = PageController(initialPage: _currentPageIndex);
+    _loadSubChapterData();
   }
 
   @override
@@ -30,115 +40,129 @@ class _ContentScreenState extends State<ContentScreen> {
     super.dispose();
   }
 
+  Future<void> _loadSubChapterData() async {
+    try {
+      final contents = await ApiService.getSubChapterContent(widget.subChapterId);
+      if (mounted) {
+        setState(() {
+          _subChapter = SubChapter(
+            id: widget.subChapterId,
+            title: widget.subChapterTitle,
+            contents: contents,
+          );
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorSnackBar(e.toString());
+      }
+    }
+  }
+
+  void _onPageChanged(int index) {
+    setState(() {
+      _currentPageIndex = index;
+    });
+  }
+
+  void _navigateToPage(int page) {
+    _pageController.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error loading content: $message'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.subChapter.title,
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
+      appBar: ContentAppBar(
+        title: _subChapter?.title ?? "Loading...",
       ),
-      body: Column(
-        children: [
-          // Progress indicator
-          LinearProgressIndicator(
-            value: (currentPageIndex + 1) / widget.subChapter.contents.length,
-            backgroundColor: Colors.grey[800],
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.tealAccent),
-            minHeight: 4,
-          ),
-          // Content page view
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: widget.subChapter.contents.length,
-              onPageChanged: (index) {
-                setState(() {
-                  currentPageIndex = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                final text = widget.subChapter.contents[index].text;
-                return _buildTextPage(text);
-              },
-            ),
-          ),
-          // Navigation controls
-          _buildNavigationControls(),
-        ],
-      ),
+      body: _buildBody(),
     );
   }
 
-  Widget _buildTextPage(String text) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const _LoadingWidget();
+    }
+
+    if (_subChapter == null || _subChapter!.contents.isEmpty) {
+      return const _EmptyContentWidget();
+    }
+
+    return Column(
+      children: [
+        ContentProgressIndicator(
+          currentPage: _currentPageIndex,
+          totalPages: _subChapter!.contents.length,
+        ),
+        Expanded(
+          child: ContentPageView(
+            pageController: _pageController,
+            contents: _subChapter!.contents,
+            onPageChanged: _onPageChanged,
+          ),
+        ),
+        ContentNavigationControls(
+          currentPageIndex: _currentPageIndex,
+          totalPages: _subChapter!.contents.length,
+          onNavigate: _navigateToPage,
+        ),
+      ],
+    );
+  }
+}
+
+// Private widgets for this screen
+class _LoadingWidget extends StatelessWidget {
+  const _LoadingWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.tealAccent),
+      ),
+    );
+  }
+}
+
+class _EmptyContentWidget extends StatelessWidget {
+  const _EmptyContentWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Content text
+          Icon(
+            Icons.article_outlined,
+            size: 64,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(height: 16),
           Text(
-            text,
+            "No content available",
             style: TextStyle(
-              fontSize: 16,
-              height: 1.6,
-              color: Colors.grey[300],
+              fontSize: 18,
+              color: Colors.grey[600],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavigationControls() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color(0xFF1E1E1E),
-        border: Border(
-          top: BorderSide(color: Colors.grey[800]!, width: 1),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Previous button
-          IconButton(
-            onPressed: currentPageIndex > 0
-                ? () {
-              _pageController.previousPage(
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            }
-                : null,
-            icon: Icon(Icons.arrow_back_ios),
-            color: currentPageIndex > 0 ? Colors.white : Colors.grey[600],
-          ),
-          // Page indicator
-          Text(
-            '${currentPageIndex + 1} / ${widget.subChapter.contents.length}',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          // Next button
-          IconButton(
-            onPressed: currentPageIndex < widget.subChapter.contents.length - 1
-                ? () {
-              _pageController.nextPage(
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            }
-                : null,
-            icon: Icon(Icons.arrow_forward_ios),
-            color:
-            currentPageIndex < widget.subChapter.contents.length - 1 ? Colors.white : Colors.grey[600],
           ),
         ],
       ),

@@ -1,7 +1,7 @@
 // screens/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:geosmara_v2/widgets/geos_balance.dart';
-import '../data_dummy/list_book_dummy.dart';
+import '../models/book.dart';
+import '../services/api_service.dart';
 import '../widgets/book_slider_widget.dart';
 import '../widgets/greeting_section_widget.dart';
 import '../data_dummy/dummy_book_card.dart'; // Import data dummy
@@ -25,13 +25,35 @@ class _HomeScreenState extends State<HomeScreen> {
               GreetingSection(),
               SizedBox(height: 24),
               _buildSectionTitle('Recommended for you'),
-              BookSlider(
-                books: getRecommendedBooks(),
+              FutureBuilder<List<Book>>(
+                future: ApiService.getRecommendedBooks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error loading books'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('No books available'));
+                  } else {
+                    return BookSlider(books: snapshot.data!);
+                  }
+                },
               ),
               SizedBox(height: 24),
               _buildSectionTitle('Best Sellers'),
-              BookSlider(
-                books: getBooks(),
+              FutureBuilder<List<Book>>(
+                future: getBooks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error loading books'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('No books available'));
+                  } else {
+                    return BookSlider(books: snapshot.data!);
+                  }
+                },
               ),
               SizedBox(height: 16),
             ],
@@ -55,4 +77,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-

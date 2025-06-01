@@ -1,6 +1,6 @@
 import '../models/book.dart';
 
-List<Book> getBooks() {
+Future<List<Book>> getBooks() async {
   return [
     Book(
       id: "1",
@@ -8,7 +8,6 @@ List<Book> getBooks() {
       author: 'Pak Rengga',
       imageUrl: 'https://images.unsplash.com/photo-1509021436665-8f07dbf5bf1d',
       rating: 4.5,
-      price: 10.0,
     ),
     Book(
       id: "2",
@@ -16,7 +15,6 @@ List<Book> getBooks() {
       author: 'Dewi Kartika',
       imageUrl: 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546',
       rating: 4.0,
-      price: 8.5,
     ),
     Book(
       id: "3",
@@ -24,7 +22,6 @@ List<Book> getBooks() {
       author: 'Andi Pratama',
       imageUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085',
       rating: 4.8,
-      price: 12.0,
     ),
   ];
 }

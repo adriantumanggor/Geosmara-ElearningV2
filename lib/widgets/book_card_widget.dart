@@ -61,7 +61,6 @@ class BookCard extends StatelessWidget {
         SizedBox(height: 8),
         _buildRating(),
         Spacer(),
-        _buildPriceColumn(), // Remove the button if you want the entire card to be clickable
       ],
     );
   }
@@ -104,27 +103,11 @@ class BookCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPriceColumn() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '${book.price.toStringAsFixed(2)} GEOS',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.tealAccent,
-          ),
-        ),
-      ],
-    );
-  }
-
   void _navigateToBookDetail(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BookDetailScreen(book: book),
+        builder: (context) => BookDetailScreen(bookId: book.id),
       ),
     );
   }
